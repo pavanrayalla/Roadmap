@@ -112,7 +112,7 @@
     }
     .hero h1 { margin: 0 0 8px; font-size: clamp(28px, 4vw, 46px); line-height: 1.05; }
     .hero p { margin: 0; max-width: 900px; color: #e8efff; font-size: 16px; }
-    .meta-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
+    .meta-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-top: 20px; }
     .meta-card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); padding: 14px; border-radius: 16px; }
     .meta-card .num { font-size: 24px; font-weight: 900; }
     .meta-card .label { font-size: 12px; color: #dbeafe; }
@@ -170,7 +170,7 @@
     }
     .qa-details:not([open]) summary { border-bottom: 0; }
     .qa-details .question-list { padding: 14px; }
-    .flow-list { counter-reset: item; display: grid; gap: 8px; }
+    .flow-list { counter-reset: item -1; display: grid; gap: 8px; }
     .flow-step {
       counter-increment: item; display: grid; grid-template-columns: 46px 1fr; gap: 12px;
       padding: 12px; border: 1px solid #e5e7eb; border-radius: 14px; background: #ffffff;
@@ -184,11 +184,61 @@
     code { padding: 2px 6px; font-size: 0.92em; }
     pre { overflow-x: auto; padding: 14px; margin: 8px 0 0; font-size: 13px; }
     .footer { padding: 30px 0 80px; color: var(--muted); font-size: 13px; }
+    /* --- Progress bar --- */
+    .progress-wrap {
+      margin-top: 18px; background: rgba(255,255,255,0.15); border-radius: 999px;
+      height: 10px; overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, #60a5fa, #a5f3fc);
+      border-radius: 999px; transition: width 0.4s ease;
+    }
+    .progress-row {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 8px; font-size: 13px; color: #dbeafe;
+    }
+    .progress-pct { font-weight: 900; font-size: 15px; color: white; }
+    .btn-resume {
+      margin-top: 14px; background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35); color: white;
+      padding: 10px 20px; border-radius: 14px; font-size: 13px;
+      font-weight: 800; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-resume:hover { background: rgba(255,255,255,0.28); transform: translateY(-1px); }
+
+    /* --- Section progress badge --- */
+    .section-progress-badge {
+      display: inline-flex; align-items: center; padding: 4px 11px;
+      border-radius: 999px; background: #f0f4ff; color: #2457c5;
+      font-size: 12px; font-weight: 800; border: 1px solid #c7d7fa;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .section-progress-badge.all-done {
+      background: #dcfce7; color: #137333; border-color: #86efac;
+    }
+    .section-head-right {
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+
+    /* --- Mark all button --- */
+    .btn-mark-all {
+      background: #f0f4ff; color: #2457c5; border: 1px solid #c7d7fa;
+      padding: 7px 12px; border-radius: 12px; font-size: 12px;
+      font-weight: 800; cursor: pointer; white-space: nowrap;
+    }
+    .btn-mark-all:hover { background: #dbeafe; transform: translateY(-1px); }
+
+    /* --- Search count --- */
+    #searchCount {
+      font-size: 11px; color: #8fb2e4; text-align: right;
+      min-height: 16px; margin-top: 2px;
+    }
+
     @media (max-width: 980px) {
       .app { grid-template-columns: 1fr; }
       aside { position: relative; height: auto; }
       main { padding: 18px; }
-      .meta-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .meta-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .grid { grid-template-columns: 1fr; }
     }
     @media print {
@@ -208,6 +258,7 @@
       <div class="subtitle">Corrected order, clean numbering, full skill list, and interview question bank.</div>
       <div class="sidebar-tools">
         <input id="searchInput" type="search" placeholder="Search roadmap/questions..." />
+        <div id="searchCount"></div>
         <div class="btn-row">
           <button class="secondary" onclick="expandAll()">Expand</button>
           <button class="secondary" onclick="collapseAll()">Collapse</button>
@@ -286,6 +337,14 @@
           <div class="meta-card"><div class="num">30</div><div class="label">Fast-track days</div></div>
           <div class="meta-card"><div class="num">1</div><div class="label">Practice project</div></div>
         </div>
+        <div class="progress-wrap" style="margin-top:22px;">
+          <div class="progress-bar" id="globalProgressBar" style="width:0%"></div>
+        </div>
+        <div class="progress-row">
+          <span id="globalProgressCount">0 / 0 items checked</span>
+          <span class="progress-pct" id="globalProgressPct">0%</span>
+        </div>
+        <button class="btn-resume" onclick="resumeProgress()">▶ Resume — Jump to next incomplete phase</button>
       </div>
 
       <section id="start-end" data-title="Correct start to end order">
@@ -618,7 +677,6 @@ Kubernetes / AKS deployment basics</pre>
                 <span><strong>Q65.</strong> Pavan, do you have any questions for me?</span>
               </label></div>
             </details>
-              </div>
             </details>
             <details class="qa-details">
               <summary>Round 2 — Azure Services / .NET / AKS (101 questions)</summary>
@@ -1360,6 +1418,8 @@ Kubernetes / AKS deployment basics</pre>
                 <span><strong>Q7.</strong> How do teams handle observability and production troubleshooting today — Application Insights, centralized logging, dashboards, Kubernetes monitoring, or an internal tracing platform?</span>
               </label></div>
           </details>
+          </div>
+            </details>
           </div>
         </div>
       </section>
@@ -5371,6 +5431,7 @@ Kubernetes / AKS deployment basics</pre>
   </div>
 
   <script>
+    /* ── toggle / expand / collapse ── */
     function toggleSection(btn) {
       const card = btn.closest(".section-card");
       const body = card && card.querySelector(":scope > .section-body");
@@ -5386,38 +5447,160 @@ Kubernetes / AKS deployment basics</pre>
       document.querySelectorAll(".section-card > .section-body").forEach(b => b.classList.add("collapsed"));
       document.querySelectorAll(".toggle").forEach(b => b.textContent = "Expand");
     }
+
+    /* ── progress tracking ── */
+    function updateProgress() {
+      const all = document.querySelectorAll("input[data-check-id]");
+      const checkedCount = Array.from(all).filter(i => i.checked).length;
+      const total = all.length;
+      const pct = total ? Math.round(checkedCount / total * 100) : 0;
+
+      const bar = document.getElementById("globalProgressBar");
+      const pctEl = document.getElementById("globalProgressPct");
+      const countEl = document.getElementById("globalProgressCount");
+      if (bar) bar.style.width = pct + "%";
+      if (pctEl) pctEl.textContent = pct + "%";
+      if (countEl) countEl.textContent = checkedCount + " / " + total + " items checked";
+
+      // Per-section badges
+      document.querySelectorAll("main section").forEach(sec => {
+        const sInputs = sec.querySelectorAll("input[data-check-id]");
+        if (!sInputs.length) return;
+        const badge = sec.querySelector(".section-progress-badge");
+        if (!badge) return;
+        const done = Array.from(sInputs).filter(i => i.checked).length;
+        badge.textContent = done + "/" + sInputs.length;
+        badge.classList.toggle("all-done", done === sInputs.length);
+      });
+    }
+
     function saveProgress(input) {
       const data = JSON.parse(localStorage.getItem("roadmapProgressV4") || "{}");
       data[input.dataset.checkId] = input.checked;
       localStorage.setItem("roadmapProgressV4", JSON.stringify(data));
+      updateProgress();
     }
+
     function restoreProgress() {
       const data = JSON.parse(localStorage.getItem("roadmapProgressV4") || "{}");
       document.querySelectorAll("input[data-check-id]").forEach(input => {
         input.checked = !!data[input.dataset.checkId];
       });
+      updateProgress();
     }
+
     function resetProgress() {
       if (confirm("Reset all checklist and question progress?")) {
         localStorage.removeItem("roadmapProgressV4");
         document.querySelectorAll("input[data-check-id]").forEach(input => input.checked = false);
+        updateProgress();
       }
     }
+
+    /* ── resume: jump to first incomplete phase ── */
+    function resumeProgress() {
+      const phases = document.querySelectorAll("main section[id^='phase-']");
+      for (const sec of phases) {
+        const inputs = sec.querySelectorAll("input[data-check-id]");
+        if (!inputs.length) continue;
+        const allDone = Array.from(inputs).every(i => i.checked);
+        if (!allDone) {
+          // Expand if collapsed
+          const body = sec.querySelector(".section-body");
+          const toggle = sec.querySelector(".toggle");
+          if (body && body.classList.contains("collapsed")) {
+            body.classList.remove("collapsed");
+            if (toggle) toggle.textContent = "Collapse";
+          }
+          sec.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+      }
+      alert("🎉 All phases complete! Great work.");
+    }
+
+    /* ── mark all in a section ── */
+    function markAll(btn) {
+      const sec = btn.closest("section");
+      if (!sec) return;
+      const inputs = sec.querySelectorAll("input[data-check-id]");
+      const allChecked = Array.from(inputs).every(i => i.checked);
+      const data = JSON.parse(localStorage.getItem("roadmapProgressV4") || "{}");
+      inputs.forEach(input => {
+        input.checked = !allChecked;
+        data[input.dataset.checkId] = !allChecked;
+      });
+      localStorage.setItem("roadmapProgressV4", JSON.stringify(data));
+      btn.textContent = allChecked ? "Mark all done" : "Clear all";
+      updateProgress();
+    }
+
+    /* ── inject per-section badges and mark-all buttons ── */
+    function initSectionExtras() {
+      document.querySelectorAll("main section").forEach(sec => {
+        const inputs = sec.querySelectorAll("input[data-check-id]");
+        if (!inputs.length) return;
+        const head = sec.querySelector(".section-head");
+        if (!head) return;
+
+        // Wrap the existing toggle in a right-side group
+        const toggle = head.querySelector(".toggle");
+        let rightGroup = head.querySelector(".section-head-right");
+        if (!rightGroup) {
+          rightGroup = document.createElement("div");
+          rightGroup.className = "section-head-right";
+          if (toggle) head.insertBefore(rightGroup, toggle);
+          else head.appendChild(rightGroup);
+        }
+
+        // Progress badge
+        const badge = document.createElement("span");
+        badge.className = "section-progress-badge";
+        badge.textContent = "0/" + inputs.length;
+        rightGroup.appendChild(badge);
+
+        // Mark all button
+        const markBtn = document.createElement("button");
+        markBtn.className = "btn-mark-all";
+        markBtn.textContent = "Mark all done";
+        markBtn.onclick = function() { markAll(this); };
+        rightGroup.appendChild(markBtn);
+
+        // Move existing toggle into group
+        if (toggle) rightGroup.appendChild(toggle);
+      });
+    }
+
+    /* ── priority filter ── */
     function filterPriority(priority) {
       document.getElementById("searchInput").value = "";
+      document.getElementById("searchCount").textContent = "";
       document.querySelectorAll("main section").forEach(sec => {
         const p = sec.dataset.priority;
         if (!p || priority === "all") sec.classList.remove("hidden");
         else sec.classList.toggle("hidden", p !== priority);
       });
     }
+
+    /* ── search with result count ── */
     document.getElementById("searchInput").addEventListener("input", function () {
       const q = this.value.trim().toLowerCase();
+      let visible = 0;
       document.querySelectorAll("main section").forEach(sec => {
         const hay = (sec.dataset.title || sec.textContent || "").toLowerCase();
-        sec.classList.toggle("hidden", q && !hay.includes(q));
+        const hide = q && !hay.includes(q);
+        sec.classList.toggle("hidden", hide);
+        if (!hide) visible++;
       });
+      const countEl = document.getElementById("searchCount");
+      if (q) {
+        countEl.textContent = visible + " section" + (visible === 1 ? "" : "s") + " found";
+      } else {
+        countEl.textContent = "";
+      }
     });
+
+    /* ── nav active highlight ── */
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -5428,6 +5611,9 @@ Kubernetes / AKS deployment basics</pre>
       });
     }, { rootMargin: "-30% 0px -65% 0px", threshold: 0 });
     document.querySelectorAll("main section").forEach(sec => observer.observe(sec));
+
+    /* ── init ── */
+    initSectionExtras();
     restoreProgress();
   </script>
 </body>
